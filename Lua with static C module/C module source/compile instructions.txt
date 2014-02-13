@@ -1,0 +1,7 @@
+compile with:
+gcc -Wall -shared -fPIC -o MCmodule.so  -I/usr/include/lua5.1 -llua5.1 -std=c99 main.c -O2 -lwiringPi
+
+than move to proper location with:
+sudo mv ./MCmodule.so /usr/local/lib/lua/5.1/
+
+(if you have different version of lua, change it accordingly!)
