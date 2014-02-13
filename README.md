@@ -3,6 +3,7 @@ MCserver-RaspberryGPIO
 
 Plugin for the MCserver to control Raspberry Pi's GPIO from Minecraft.
 If you want to add some code or make it better in any way, I would be most grateful!
+You can see it working at http://www.youtube.com/watch?v=Y1ErAeNBC_0.
 
 Installation:
 1)
