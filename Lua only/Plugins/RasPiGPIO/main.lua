@@ -7,8 +7,8 @@
 
 
 local gpio = require("GPIO")
-require("/Plugins/Moje/arbitrary")
-require("/Plugins/Moje/blockHandler")
+--require("/Plugins/Moje/arbitrary")
+--require("/Plugins/Moje/blockHandler")
 --require("MCmodule")
 
 PLUGIN = nil
