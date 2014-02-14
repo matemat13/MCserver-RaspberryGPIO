@@ -8,8 +8,8 @@
 
 local gpio = require("GPIO")
 require("/Plugins/Moje/arbitrary")
-require("/Plugins/Moje/blockHandler")
---require("MCmodule")
+--require("/Plugins/Moje/blockHandler")
+require("MCmodule")
 
 PLUGIN = nil
 
@@ -28,21 +28,9 @@ last_placed_by_player = {}
 function Initialize(Plugin)
 	Plugin:SetName("RasPiGPIO")
 	Plugin:SetVersion(1)
-
+  
 
   
-  local f = io.open("outputs.txt", "r")
-  if f ~= nil then
-   outputs = table.load("outputs.txt") 
-  end
-  f = io.open("inputs.txt", "r")
-  if f ~= nil then
-   inputs = table.load("inputs.txt") 
-  end
-  f = io.open("infosigns.txt", "r")
-  if f ~= nil then
-   infosigns= table.load("infosigns.txt") 
-  end
 
   cPluginManager:AddHook(cPluginManager.HOOK_PLAYER_PLACED_BLOCK, MyOnPlayerPlacedBlock)
   cPluginManager:AddHook(cPluginManager.HOOK_PLAYER_BROKEN_BLOCK, MyOnPlayerBrokenBlock)
@@ -58,7 +46,7 @@ function Initialize(Plugin)
 
  --gpio.warnings(0)
 
- gpio.setmode(GPIO.BOARD)
+ --gpio.setmode(GPIO.BOARD)
 
 
 
@@ -69,47 +57,14 @@ function Initialize(Plugin)
 end
 
 function OnDisable()
- --Quitting()
- local err = (table.save(outputs, "outputs.txt"))
- if (err ~= nil) then
-  LOG(err)
- end
- err = (table.save(inputs, "inputs.txt"))
- if (err ~= nil) then
-  LOG(err)
- end
- err = (table.save(infosigns, "infosigns.txt"))
- if (err ~= nil) then
-  LOG(err)
- end
+ Quitting()	--to save the arrays to a file
+ 
  gpio.cleanup()
  LOG("Disabled " .. PLUGIN:GetName() .. "!")
 end
 
 function MyOnWorldTick(World, TimeDelta)
- for key,input in pairs(inputs) do
-  if (readPin(input['PIN']) == 1) then
-   blockOn(input['X'], input['Y'], input['Z'], World)
-  else
-   blockOff(input['X'], input['Y'], input['Z'], World)
-  end
- end
- local state = nil
- for key,output in pairs(outputs) do
-  state = blockState(output['X'], output['Y'], output['Z'], World)	--Static means, that it ignores player-switchable blocks (like levers)
-  if (state == 1) then
-   writePin(output['PIN'], 1)
-  else if (state == 0) then
-   writePin(output['PIN'], 0)
-  end
-  end
- end
-
- if (tickCounter == 16) then
-  tickCounter = 0
-  UpdateSigns(World)
- end
- tickCounter = tickCounter +1
+ worldTick(World)
 end
 
 function MyOnUpdatedSign(World, BlockX, BlockY, BlockZ, Line1, Line2, Line3, Line4, Player)
@@ -157,25 +112,10 @@ function AssignLast(Split, Player)
    local plname = Player:GetName()
    if (last_placed_by_player[plname] ~= nil) then
     if (#Split == 3 and Split[3] == "IN") then
-     local lastl = #inputs + 1
-     inputs[lastl] = {}
-     inputs[lastl]['X'] = last_placed_by_player[plname]['X']
-     inputs[lastl]['Y'] = last_placed_by_player[plname]['Y']
-     inputs[lastl]['Z'] = last_placed_by_player[plname]['Z']
-     inputs[lastl]['PIN'] = pin 
-     gpio.setup(pin, gpio.IN)
+     addInput(last_placed_by_player[plname]['X'], last_placed_by_player[plname]['Y'], last_placed_by_player[plname]['Z'], pin)
+     LOG("Input added in C")
     else
-     local lastl = #outputs + 1
-     local pin = Split[2]
-     outputs[lastl] = {}
-     outputs[lastl]['X'] = last_placed_by_player[plname]['X']
-     outputs[lastl]['Y'] = last_placed_by_player[plname]['Y']
-     outputs[lastl]['Z'] = last_placed_by_player[plname]['Z']
-     outputs[lastl]['PIN'] = pin
-     local state = blockState(outputs[lastl]['X'], outputs[lastl]['Y'], outputs[lastl]['Z'], Player:GetWorld())
-     if (state ~= nil) then
-      writePin(pin, state)
-     end
+     addOutput(last_placed_by_player[plname]['X'], last_placed_by_player[plname]['Y'], last_placed_by_player[plname]['Z'], pin)
      --LOG("Lever on position [" .. outputs[lastl]['X'] .. "," .. outputs[lastl]['Y'] .. "," .. outputs[lastl]['Z'] .. "] has been placed and linked to pin " .. pin .. " by player " .. plname .. ".")
     end
    else
@@ -213,24 +153,10 @@ end
 
 function MyOnPlayerBrokenBlock(Player, BlockX, BlockY, BlockZ, BlockFace, BlockType, BlockMeta)
  --if (BlockType == 69) then
-  local i = FindOutputIndex(BlockX, BlockY, BlockZ)
-  if (i ~= nil) then
-   --LOG("N of outputs " .. #outputs .. ".")
-   --LogLevers()
-   --LOG("Lever assigned to pin " .. outputs[i]['PIN'] .. " with index " .. i .. " has been removed.")
-   table.remove(outputs, i)
-   --LOG("Remaining outputs " .. #outputs .. ".")
-   --LogLevers()
-  end
-  i = FindInputIndex(BlockX, BlockY, BlockZ)
-  if (i ~= nil) then
-   --LOG("N of outputs " .. #outputs .. ".")
-   --LogLevers()
-   --LOG("Lever assigned to pin " .. outputs[i]['PIN'] .. " with index " .. i .. " has been removed.")
-   table.remove(inputs, i)
-   --LOG("Remaining outputs " .. #outputs .. ".")
-   --LogLevers()
-  end
+  remOutput(BlockX, BlockY, BlockZ)  
+
+  remInput(BlockX, BlockY, BlockZ)  
+
   i = FindInfoSign(BlockX, BlockY, BlockZ)
   if (i ~= nil) then
 
@@ -245,17 +171,7 @@ function MyOnPlayerBrokenBlock(Player, BlockX, BlockY, BlockZ, BlockFace, BlockT
 end
 
 function MyOnPlayerUsedBlock(Player, BlockX, BlockY, BlockZ, BlockFace, CursorX, CursorY, CursorZ, BlockType, BlockMeta)
- if (BlockType == 69 or BlockType == 77 or type == 143) then
-  local i = FindOutputIndex(BlockX, BlockY, BlockZ)
-  if (i ~= nil) then
-   local state = blockState(outputs[i]['X'], outputs[i]['Y'], outputs[i]['Z'], Player:GetWorld())
-   if (state ~= nil) then
-    writePin(outputs[i]['PIN'], state)
-   end
-   --LOG("::Pin " .. outputs[i]['PIN'] .. " toggled to state " .. outputs[i]['VAL'] .. ".")
 
-  end
- end
 end
 
 --Pri odpojeni se uklidi hracuv posledni pouzity blok
