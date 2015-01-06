@@ -9,6 +9,7 @@ Installation:
 1)
 Install MCserver (http://mc-server.org) on your Raspberry Pi.
 I had to build it manually, otherwise it gave me a SegFault after start - it takes about an hour to build (or you can use distributed build like distcc).
+Note: This problem went away with newer MCserver releases.
 
 2)
 a) The Lua version.
@@ -16,7 +17,7 @@ Download the GPIO.so module from the "Lua only" subfolder and put it into /usr/l
 -if this doesn't work for some reason, try building it yourself (takes about five minutes): http://www.andre-simon.de/doku/rpi_gpio_lua/en/rpi_gpio_lua.php
  just watch out, as in the Makefile for it there is an old version of the Python lib linked, so you need to change that for it to work
 
-b) The Lua and C-module version.
+b) The Lua and C-module version.	--Note: This is probably outdated with the new versions of MCserver and will not be maintained.
 I rewrote some of slower functions into C to make it a bit faster, but I think it is even slower (probably because of the C to Lua interface dragging it down).
 To use it, download the MCmodule.so from the "Lua with static C module" subfolder and put it into the folder described above.
 To build it, download the main.c from "/Lua with static C module/C module source/" subfolder and build it with the instructions included.
@@ -48,5 +49,6 @@ Now only works with:
  -redstone lamp
 (as both input and output).
 But new blocks can be easily added by some basic editing of the Lua scripts or the C source.
+Note: levers as inputs are bugged for some reason - after being in the ON state, the redstone near the lever stays activated no matter what.
 
-For the infosigns place a sign and write "\TEMP", "\CPU", or "\RAM" on the first line and see what happens! :)
+For the infosigns place a sign and write "/TEMP", "/CPU", or "/RAM" on the first line and see what happens! :)

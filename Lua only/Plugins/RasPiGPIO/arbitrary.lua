@@ -81,13 +81,19 @@ function StrIO()
  for i, input in pairs(inputs) do
   ret = ret .. ("Input " .. i .. ":\n")
   for var, val in pairs(input) do
-   ret = ret .. ("- " .. var .. " = " .. val .. "\n")
+   ret = ret .. ("- " .. var .. " = " .. tostring(val) .. "\n")
   end
  end
  for i, output in pairs(outputs) do
   ret = ret .. ("Output " .. i .. ":\n")
   for var, val in pairs(output) do
-   ret = ret .. ("- " .. var .. " = " .. val .. "\n")
+   ret = ret .. ("- " .. var .. " = " .. tostring(val) .. "\n")
+  end
+ end
+ for i, sign in pairs(infosigns) do
+  ret = ret .. ("Sign " .. i .. ":\n")
+  for var, val in pairs(sign) do
+   ret = ret .. ("- " .. var .. " = " .. tostring(val) .. "\n")
   end
  end
  return ret
